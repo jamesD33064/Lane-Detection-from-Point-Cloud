@@ -20,8 +20,7 @@ def filter_cloud(xyza, nb_points=16, radius=1.0):
 
     # Radius oulier removal
     if 1:
-        cloud, inliers_ind = open3d.radius_outlier_removal(
-            cloud,
+        cloud, inliers_ind = cloud.remove_radius_outlier(
             nb_points=nb_points,
             radius=radius)
 

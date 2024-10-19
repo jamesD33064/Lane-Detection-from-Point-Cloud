@@ -94,7 +94,7 @@ def plot_cloud_3d(xyza, figsize=(12, 12), title='', ax=None):
     p_world = xyza[:, 0:3].T
     p_image = world2pixel(p_world, T_cam_to_world, camera_intrinsics)
     # to int, so it cloud be plot onto image
-    p_image = np.round(p_image).astype(np.int)
+    p_image = np.round(p_image).astype(int)
 
     # Put each point onto image
     zeros, ones = np.zeros((h, w)), np.ones((h, w))

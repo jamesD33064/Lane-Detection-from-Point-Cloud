@@ -29,7 +29,7 @@ def parse_data(xyza=None, xyz=None, rgb=None, a=None):
 def write_cloud(filename, xyza=None, xyz=None, rgb=None, a=None):
     xyza, xyz, rgb, a = parse_data(xyza, xyz, rgb, a)
     cloud = form_cloud(xyza)
-    open3d.write_point_cloud(filename, cloud)
+    open3d.io.write_point_cloud(filename, cloud)
 
 
 def read_cloud(filename):
@@ -58,7 +58,7 @@ def get_xyza(cloud):
 def form_cloud(xyza=None, xyz=None, rgb=None, a=None):
     '''Form a open3d cloud from {xyz} and {rgb or alpha} data'''
     xyza, xyz, rgb, a = parse_data(xyza, xyz, rgb, a)
-    open3d_cloud = open3d.PointCloud()
+    open3d_cloud = open3d.geometry.PointCloud()
     open3d_cloud.points = open3d.utility.Vector3dVector(xyz)
     open3d_cloud.colors = open3d.utility.Vector3dVector(rgb)
     return open3d_cloud
