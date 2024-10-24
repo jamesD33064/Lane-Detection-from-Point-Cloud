@@ -88,6 +88,13 @@ class Clusterer(object):
                                                    average_method='arithmetic'))
         print("Silhouette Coefficient: %0.3f"
               % metrics.silhouette_score(X, labels))
+    
+    def get_cluster_data(self, cluster_label):
+        """根據給定的 cluster_label 返回該分群的資料"""
+        if not self.fit_success:
+            return None
+        indices = (self.labels == cluster_label)
+        return self.X[indices]
 
 
 if __name__ == "__main__":

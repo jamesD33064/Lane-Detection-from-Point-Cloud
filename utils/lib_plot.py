@@ -55,6 +55,7 @@ def plot_cloud_2d(xyza, figsize=(8, 6), title='', ax=None):
     # Set position
     x = xyza[:, 0]
     y = xyza[:, 1]
+    print(xyza.shape)
 
     # Plot
     plt.scatter(x, y, c=color, marker='.', linewidths=1)
@@ -128,3 +129,70 @@ def plot_cloud_3d(xyza, figsize=(12, 12), title='', ax=None):
 #     ax.set_xlabel('x')
 #     ax.set_ylabel('y')
 #     ax.set_zlabel('z')
+
+def plot_2d_line_from_3d(xyza, head_pts, tail_pts, figsize=(12, 12), title='', ax=None):
+    ''' 
+    將 3D 點雲投影到 2D 圖像上，並顯示直線 
+    輸入:
+        xyza: 3D 點雲數據，形狀為 (n, 4)
+        head_pts: 直線頭部座標 (x, y, z)
+        tail_pts: 直線尾部座標 (x, y, z)
+        figsize: 圖像大小
+        title: 圖像標題
+        ax: matplotlib 的 axes，默認為 None
+    '''
+
+    # 如果沒有提供 ax，則創建 figure 和 axes
+    if ax is None:
+        fig = plt.figure(figsize=figsize)
+        ax = plt.gca()
+    
+    num_points = xyza.shape[0]
+
+    # 相機內參數
+    w, h = 640, 480
+    camera_intrinsics = np.array([
+        [w, 0, w/2],
+        [0, h, h/2],
+        [0, 0,   1]
+    ], dtype=np.float32)
+
+    # 設置相機的視角與位置
+    X, Y, Z = -20, -68, 238
+    ROTZ = np.pi / 2
+    ROTY = -np.pi / 2.8
+    T_world_to_camera = transXYZ(x=X, y=Y, z=Z).dot(
+        rotz(ROTZ)).dot(rotx(0)).dot(roty(ROTY))
+    T_cam_to_world = np.linalg.inv(T_world_to_camera)
+
+    # 轉換點雲到 2D 像素座標
+    p_world = xyza[:, 0:3].T
+    p_image = world2pixel(p_world, T_cam_to_world, camera_intrinsics)
+    p_image = np.round(p_image).astype(int)
+
+    # 構建影像
+    color = np.zeros((h, w, 3))  # 黑色背景
+    for i in range(num_points):
+        x, y, a = p_image[0, i], p_image[1, i], xyza[i, -1]
+        u, v = y, x  # 翻轉 x, y 方向以匹配 plt 的顯示
+        if w > u >= 0 and h > v >= 0:
+            color[v][u][0] = max(color[v][u][0], a)  # 紅色通道
+            color[v][u][2] = 1 - color[v][u][0]      # 藍色通道
+
+    # 將頭部和尾部座標轉換為 2D 像素座標
+    p_line_world = np.vstack((head_pts, tail_pts)).T
+    p_line_image = world2pixel(p_line_world, T_cam_to_world, camera_intrinsics)
+    p_line_image = np.round(p_line_image).astype(int)
+
+    # 提取頭尾的 2D 座標，並對調 u 和 v，以匹配圖像軸
+    v_head, u_head = p_line_image[0, 0], p_line_image[1, 0]
+    v_tail, u_tail = p_line_image[0, 1], p_line_image[1, 1]
+
+    # 在圖像上繪製直線
+    line = [[u_head, u_tail], [v_head, v_tail]]
+    ax.plot(line[0], line[1], color='y', linewidth=2)
+
+    # 顯示圖像
+    ax.imshow(color)
+    ax.axis('off')  # 關閉座標軸
+    ax.set_title(title)
