@@ -1,3 +1,5 @@
 __pycache__/
 *.jpg
 *.pcd
+result/
+.DS_Store

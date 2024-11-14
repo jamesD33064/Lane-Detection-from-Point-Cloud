@@ -1,6 +1,4 @@
-
 import numpy as np
-
 
 def limit_points_number_for_PCA(points, max_points):
     ''' 

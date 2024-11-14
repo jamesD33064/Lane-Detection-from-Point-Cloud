@@ -9,6 +9,13 @@ from .lib_geo_trans import transXYZ, rotx, roty, rotz, world2pixel
 from .lib_cloud_proc import downsample
 from matplotlib import gridspec
 
+# cpX, cpY, cpZ = -160, 130, 0 # real2
+# crROTZ = np.pi / 2.7 # real2
+# crROTY = -np.pi / 3 # real2
+
+cpX, cpY, cpZ = -60, 570, 50 # real3
+crROTZ = np.pi / 1.4 # real3
+crROTY = -np.pi / 2.8 # real3
 
 def plot_cloud_2d3d(xyza, figsize=(16, 8), title='', print_time=True):
     ''' Plot two figures for a point cloud: Left is 2d; Right is 3d '''
@@ -40,14 +47,12 @@ def plot_cloud_2d(xyza, figsize=(8, 6), title='', ax=None):
     ''' Plot point cloud projected on x-y plane '''
 
     # Set figure
-    if not ax:
-        fig = plt.figure(figsize=figsize)
-        ax = plt.gca()
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
     ax.set_aspect('equal')
-    # xyza=downsample(xyza, voxel_size=0.1) # BE CAUSIOUS OF THIS !!!
 
-    # Set color
-    red = xyza[:, -1]
+    # 確保顏色的範圍在 0 到 1 之間
+    red = np.clip(xyza[:, -1], 0, 1)
     green = np.zeros_like(red)
     blue = 1 - red
     color = np.column_stack((red, green, blue))
@@ -55,14 +60,12 @@ def plot_cloud_2d(xyza, figsize=(8, 6), title='', ax=None):
     # Set position
     x = xyza[:, 0]
     y = xyza[:, 1]
-    print(xyza.shape)
 
     # Plot
-    plt.scatter(x, y, c=color, marker='.', linewidths=1)
+    ax.scatter(x, y, c=color, marker='.', linewidths=1)
     ax.set_xlabel('x (m)', fontsize=12)
     ax.set_ylabel('y (m)', fontsize=12)
     ax.set_title(title, fontsize=16)
-    plt.axis('on')
 
 
 def plot_cloud_3d(xyza, figsize=(12, 12), title='', ax=None):
@@ -75,6 +78,7 @@ def plot_cloud_3d(xyza, figsize=(12, 12), title='', ax=None):
     num_points = xyza.shape[0]
 
     # Camera intrinsics
+    # w, h = 80, 60
     w, h = 640, 480
     camera_intrinsics = np.array([
         [w, 0, w/2],
@@ -84,9 +88,9 @@ def plot_cloud_3d(xyza, figsize=(12, 12), title='', ax=None):
 
     # Set view angle
     X, X, Z, ROTX, ROTY, ROTZ = 0, 0, 0, 0, 0, 0
-    X, Y, Z = -20, -68, 238
-    ROTZ = np.pi/2
-    ROTY = -np.pi/2.8
+    X, Y, Z = cpX, cpY, cpZ
+    ROTZ = crROTZ
+    ROTY = crROTY
     T_world_to_camera = transXYZ(x=X, y=Y, z=Z).dot(
         rotz(ROTZ)).dot(rotx(ROTX)).dot(roty(ROTY))
     T_cam_to_world = np.linalg.inv(T_world_to_camera)
@@ -111,26 +115,7 @@ def plot_cloud_3d(xyza, figsize=(12, 12), title='', ax=None):
     ax.imshow(color)
     plt.axis('off')
 
-
-# def plot_3d_cloud(cloud):
-
-#     ''' Plot 3d points using Axes3D '''
-
-#     if isinstance(cloud, open3d.PointCloud):
-#         xyz = np.asarray(cloud.points)
-#     else:
-#         xyz = cloud[:, 0:3]
-
-#     fig = plt.figure()
-#     ax = Axes3D(fig)
-
-#     x, y, z = xyz[:, 0], xyz[:, 1], xyz[:, 2]
-#     ax.scatter(x, y, z, marker='.', linewidth=1)
-#     ax.set_xlabel('x')
-#     ax.set_ylabel('y')
-#     ax.set_zlabel('z')
-
-def plot_2d_line_from_3d(xyza, head_pts, tail_pts, figsize=(12, 12), title='', ax=None):
+def plot_2d_line_from_3d(xyza, head_pts, tail_pts, figsize=(12, 12), title='', ax=None, c='y'):
     ''' 
     將 3D 點雲投影到 2D 圖像上，並顯示直線 
     輸入:
@@ -150,6 +135,7 @@ def plot_2d_line_from_3d(xyza, head_pts, tail_pts, figsize=(12, 12), title='', a
     num_points = xyza.shape[0]
 
     # 相機內參數
+    # w, h = 80, 60
     w, h = 640, 480
     camera_intrinsics = np.array([
         [w, 0, w/2],
@@ -158,9 +144,9 @@ def plot_2d_line_from_3d(xyza, head_pts, tail_pts, figsize=(12, 12), title='', a
     ], dtype=np.float32)
 
     # 設置相機的視角與位置
-    X, Y, Z = -20, -68, 238
-    ROTZ = np.pi / 2
-    ROTY = -np.pi / 2.8
+    X, Y, Z = cpX, cpY, cpZ
+    ROTZ = crROTZ
+    ROTY = crROTY
     T_world_to_camera = transXYZ(x=X, y=Y, z=Z).dot(
         rotz(ROTZ)).dot(rotx(0)).dot(roty(ROTY))
     T_cam_to_world = np.linalg.inv(T_world_to_camera)
@@ -190,7 +176,7 @@ def plot_2d_line_from_3d(xyza, head_pts, tail_pts, figsize=(12, 12), title='', a
 
     # 在圖像上繪製直線
     line = [[u_head, u_tail], [v_head, v_tail]]
-    ax.plot(line[0], line[1], color='y', linewidth=2)
+    ax.plot(line[0], line[1], color=c, linewidth=2)
 
     # 顯示圖像
     ax.imshow(color)
